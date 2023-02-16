@@ -1,0 +1,55 @@
+version: '3'
+services:
+    mariadb:
+        build: mariadb
+        env_file: .env
+        hostname: ${MYSQL_SERVER}
+        environment:
+            MYSQL_DATABASE: db_wordpress
+        expose:
+            - "3306"
+        networks:
+            - inception
+        restart: always
+        volumes:
+            - mariadb-vol:/var/lib/mysql
+    wordpress:
+        depends_on:
+            - mariadb
+        env_file: .env
+        environment:
+            WORDPRESS_DB_HOST: mysql
+            WORDPRESS_DB_NAME: wordpress_db
+            WORDPRESS_DB_USER: iyahoui
+        expose:
+            - "9000"
+        image: wordpress:php7.3-fpm-alpine
+        links:
+            - mariadb
+        networks:
+            - inception
+        restart: always
+        volumes:
+            - wordpress-vol:/var/www/html
+    nginx:
+        build: nginx
+        depends_on:
+            - wordpress
+        env_file: .env
+        links:
+            - wordpress
+        networks:
+            - inception
+        ports:
+            - 80:80
+        restart: always
+        volumes:
+            - ./nginx:/etc/nginx/conf.d
+            - wordpress-vol:/var/www/html
+networks:
+    inception:
+        driver: bridge
+
+volumes:
+    wordpress-vol:
+    mariadb-vol:
